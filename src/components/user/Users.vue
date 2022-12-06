@@ -68,6 +68,7 @@
                 type="warning"
                 icon="el-icon-setting"
                 size="mini"
+                @click="openallotRoleDialog(scope.row)"
               ></el-button>
             </el-tooltip>
           </template>
@@ -131,6 +132,28 @@
       <span slot="footer" class="dialog-footer">
         <el-button @click="editDialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="editUserInfo">确 定</el-button>
+      </span>
+    </el-dialog>
+    <el-dialog
+      title="分配角色"
+      :visible.sync="allotRoleDialogVisible"
+      width="50%"
+      @close="allotRoleDialogClosed"
+    >
+      <div class="allot-role-text">当前用户: {{ currentUser.username }}</div>
+      <div class="allot-role-text">当前角色: {{ currentUser.role_name }}</div>
+      <el-select v-model="selectedRoleId" placeholder="请选择">
+        <el-option
+          v-for="item in rolesList"
+          :key="item.id"
+          :label="item.roleName"
+          :value="item.id"
+        >
+        </el-option>
+      </el-select>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="allotRoleDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="allotRole">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -208,10 +231,15 @@ export default {
           { validator: checkMobile, trigger: "blur" },
         ],
       },
+      allotRoleDialogVisible: false,
+      currentUser: {},
+      selectedRoleId: "",
+      rolesList: [],
     };
   },
   created() {
     this.getUserList();
+    this.getRolesList();
   },
   methods: {
     async getUserList() {
@@ -285,9 +313,36 @@ export default {
       this.$message.success("删除成功");
       this.getUserList();
     },
+    openallotRoleDialog(user) {
+      this.allotRoleDialogVisible = true;
+      this.currentUser = user;
+    },
+    async getRolesList() {
+      const { data: res } = await this.$http.get("roles");
+      if (!res) return;
+      this.rolesList = res.data;
+    },
+    async allotRole() {
+      const { data: res } = await this.$http.put(
+        `users/${this.currentUser.id}/role`,
+        { rid: this.selectedRoleId }
+      );
+      if (!res) return;
+      this.$message.success("分配角色成功");
+      this.allotRoleDialogVisible = false;
+      this.getUserList()
+    },
+    allotRoleDialogClosed() {
+      this.currentUser = {};
+      this.selectedRoleId = "";
+    },
   },
 };
 </script>
 
 <style lang="less" scoped>
+.allot-role-text{
+  margin-bottom: 20px;
+  font-size: 15px;
+}
 </style>
